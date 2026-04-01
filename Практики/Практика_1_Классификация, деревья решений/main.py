@@ -1,57 +1,181 @@
-def get_gini_impurity(group: list[int]) -> float:
-    m = len(group)
-    p = sum(x == 0 for x in group) / m
-    q = sum(x == 1 for x in group) / m
-    return 1 - p ** 2 - q ** 2
+class Node:
+    """Базовый класс представляет узел дерева"""
+    def __init__(self, feature_index=None, threshold=None, left=None, right=None, value=None):
+        """
+        Parameters:
+        feature_index: Индекс признака, используемого для разделения
+        thereshold: Пороговое значение для разделения
+        left: Ссылка на левый узел
+        right: Ссылка на правый узел
+        value: Значнеие узла
+        """
+        self.feature_index = feature_index
+        self.threshold = threshold
+        self.left = left
+        self.right = right
+        self.value = value
 
 
-def get_impurity(group1: list[int], group2: list[int]) -> float:
-    m1 = len(group1)
-    m2 = len(group2)
-    m = m1 + m2
-    return m1 / m * get_gini_impurity(group1) + m2 / m * get_gini_impurity(group2)
+class DecisionTreeClassifier:
+    """Классификатор решений по классам"""
+    def __init__(self, max_depth=None, min_samples_split=2):
+        """
+        Parametrs:
+        max_depth: Максимальная глубина дерева
+        min_samples_split: Минимальное разбиение
+        min_impurity_decrease
+        """
+        self.max_depth = max_depth
+        self.min_samples_split = min_samples_split
+        self.root = None
 
+    def _build_tree(self, X, y, depth=0):
+        """Рекурсивно строит дерево"""
+        if self._should_stop(y, depth):
+            return Node(value=self._get_most_common_label(y))
+        
+        best_gini, best_threshold, best_groups = self._find_best_split(X, y)
+        if best_gini == float("inf"):
+            return Node(value=self._get_most_common_label(y))
+        
+        left_X = []
+        right_X = []
+        left_y , right_y = best_groups
 
-"""def should_stop(node):
-    if get_gini_impurity(node) == 0:
-        return True
+        for feature, label in zip(X, y):
+            if feature <= best_threshold:
+                left_X.append(feature)
+            else:
+                right_X.append(feature)
+        left_child = self._build_tree(left_X, left_y, depth + 1)
+        right_child = self._build_tree(right_X, right_y, depth + 1)
+        
+
+        return Node(
+            feature_index=0,
+            threshold = best_threshold,
+            left=left_child,
+            right = right_child)
+
     
-    if len(node) < min_samples:
-        return True
+    def _find_best_split(self, X, y):
+        """Находит лучшее разделение для текущего узла"""
+        features = set(X)
+        groups = {}
+        best_gini = float("inf")
+        best_groups = []
+        best_threshold = 0
+        # Наилучшее разделение достигается при наименьшей G(I)
+        for threshold in features:
+            group_1 = []
+            group_2 = []
+            for feature, result in zip(X, y):
+                if feature <= threshold:
+                    group_1.append(result)
+                else:
+                    group_2.append(result)
+            groups[threshold] = [group_1, group_2]
+        
+        for key, value in groups.items():
+            if not value[0] or not value[1]:
+                continue
+            split_impurity = self._calculate_split_impurity(value[0], value[1])
+            if split_impurity < best_gini:
+                best_gini = split_impurity
+                best_groups = groups[key]
+                best_threshold = key
+            else:
+                continue
+
+        return [best_gini, best_threshold, best_groups]
+            
+    def _should_stop(self, y, depth):
+        """Проверяет условия остановки"""
+        if len(set(y)) == 1:
+            return True
+        
+        if self.max_depth is not None and depth > self.max_depth:
+            return True
+        
+        if len(set(y)) < self.min_samples_split:
+            return True
+        
+        return False
     
-    if depth >= max_depth:
-        return True
+
+    def _calculate_gini(self, labels):
+        """Вычисляет коэффициент Джини"""
+        m = len(labels)
+        p = sum(x == 0 for x in labels) / m
+        q = sum(x == 1 for x in labels) / m
+        return 1 - p ** 2 - q ** 2
     
-    if improvement < min_improvement:
-        return True
+    def _calculate_split_impurity(self, left_y, right_y):
+        """Вычисляет взвешенную нечистоту разделения"""
+        m1 = len(left_y)
+        m2 = len(right_y)
+        m = m1 + m2
+        return m1 / m * self._calculate_gini(left_y) + m2 / m * self._calculate_gini(right_y)
     
-    return False
-"""
+    def _get_most_common_label(self, y):
+        """Возвращает наиболее частый класс"""
+        if not y:
+            return None
+
+        count_0 = sum(1 for label in y if label == 0)
+        count_1 = len(y) - count_0
+
+        return 0 if count_0 > count_1 else 1
 
 
-def model(feature: list[int], results: list[int]) -> float:
-    best_impurity = float('inf')
-    best_threshold = None
-    for threshold in set(feature):
-        group1 = [y for x, y in zip (feature, results) if x <= threshold]
-        group2 = [y for x, y in zip(feature, results) if x > threshold]
-
-        if not group1 or not group2:
-            continue
-
-        impurity = get_impurity(group1, group2)
-
-        if impurity < best_impurity:
-            best_impurity = impurity
-            best_threshold = threshold
+    def _predict_single(self, x, node):
+        """Предсказывает класс для одного примера"""
+        pass
     
-    print(f"Лучший порог: {best_threshold}, нечистота: {best_impurity:.3f}")
-    print(group1, group2)
-    return best_impurity
 
+    def _split_data(self, X, y, feature_idx, threshold):
+        """Разделяет данные по порогу"""
+        pass
+    
+    def print_tree(self):
+        """Выводит дерево в читаемом виде"""
+        pass
+    
+    def get_depth(self):
+        """Возвращает глубину дерева"""
+        pass
 
-lectures = [8, 6, 8, 8, 8, 6]
-results  = [0, 0, 1, 1, 1, 1]
+    def fit(self, X, y):
+        """Обучает дерево на данных"""
+        self.root = self._build_tree(X, y)
+        
+    
+    def predict(self, X):
+        """Предсказывает классы для новых данных"""
+        pass
 
-model(lectures, results)
+    def print_tree(self):
+        """Выводит дерево по уровням"""
+        self._print_tree_recursive(self.root, 0)
 
+    def _print_tree_recursive(self, node, level, side="root"):
+        if node is None:
+            return
+
+        indent = "  " * level
+        if node.value is not None:
+            print(f"{indent}{side}: Лист -> класс {node.value}")
+        else:
+            print(f"{indent}{side}: Узел -> признак {node.feature_index} <= {node.threshold}")
+            self._print_tree_recursive(node.left, level + 1, "left")
+            self._print_tree_recursive(node.right, level + 1, "right")
+    
+
+X = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
+y = [0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1]
+
+dt = DecisionTreeClassifier(max_depth=3)
+
+dt.fit(X, y)
+
+dt.print_tree()
