@@ -28,9 +28,11 @@ class DecisionTreeClassifier:
         self.max_depth = max_depth
         self.min_samples_split = min_samples_split
         self.root = None
+        self.depth = 0
 
     def _build_tree(self, X, y, depth=0):
         """Рекурсивно строит дерево"""
+
         if self._should_stop(y, depth):
             return Node(value=self._get_most_common_label(y))
         
@@ -97,7 +99,7 @@ class DecisionTreeClassifier:
         if self.max_depth is not None and depth > self.max_depth:
             return True
         
-        if len(set(y)) < self.min_samples_split:
+        if len(y) < self.min_samples_split:
             return True
         
         return False
@@ -143,22 +145,40 @@ class DecisionTreeClassifier:
     
     def get_depth(self):
         """Возвращает глубину дерева"""
-        pass
+        return self._calculate_depth(self.root)
+    
+    def _calculate_depth(self, node):
+        """Рекурсивно вычисляет глубину"""
+        if node is None:
+            return 0
+        if node.value is not None:
+            return 0
+        
+        return 1 + max(self._calculate_depth(node.left), self._calculate_depth(node.right))
+
 
     def fit(self, X, y):
         """Обучает дерево на данных"""
-        self.root = self._build_tree(X, y)
+        self.root = self._build_tree(X, y, depth=0)
         
     
-    def predict(self, X):
+    def _predict_single(self, x, node):
         """Предсказывает классы для новых данных"""
-        pass
+        if node.value is not None:
+            return node.value
+        if x <= node.threshold:
+            return self._predict_single(x, node.left)
+        else:
+            return self._predict_single(x, node.right)
+    
+    def predict(self, x):
+        if isinstance(x, int):
+            return self._predict_single(x, node=self.root)
+        return [self._predict_single(el, self.root) for el in x]
 
-    def print_tree(self):
-        """Выводит дерево по уровням"""
-        self._print_tree_recursive(self.root, 0)
+        
 
-    def _print_tree_recursive(self, node, level, side="root"):
+    def print_tree(self, node, level, side="root"):
         if node is None:
             return
 
@@ -167,15 +187,14 @@ class DecisionTreeClassifier:
             print(f"{indent}{side}: Лист -> класс {node.value}")
         else:
             print(f"{indent}{side}: Узел -> признак {node.feature_index} <= {node.threshold}")
-            self._print_tree_recursive(node.left, level + 1, "left")
-            self._print_tree_recursive(node.right, level + 1, "right")
+            self.print_tree(node.left, level + 1, "left")
+            self.print_tree(node.right, level + 1, "right")
     
 
 X = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
 y = [0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1]
 
 dt = DecisionTreeClassifier(max_depth=3)
-
 dt.fit(X, y)
 
-dt.print_tree()
+print(dt.predict([2, 2, 1, 4, 5, 4, 8, 9, 10, 4, 2, 3]))
