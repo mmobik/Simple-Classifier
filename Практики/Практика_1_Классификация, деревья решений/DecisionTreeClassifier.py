@@ -59,7 +59,6 @@ class DecisionTreeClassifier:
             left=left_child,
             right = right_child)
 
-    
     def _find_best_split(self, X, y):
         """Находит лучшее разделение для текущего узла"""
         features = set(X)
@@ -104,7 +103,6 @@ class DecisionTreeClassifier:
         
         return False
     
-
     def _calculate_gini(self, labels):
         """Вычисляет коэффициент Джини"""
         m = len(labels)
@@ -129,20 +127,6 @@ class DecisionTreeClassifier:
 
         return 0 if count_0 > count_1 else 1
 
-
-    def _predict_single(self, x, node):
-        """Предсказывает класс для одного примера"""
-        pass
-    
-
-    def _split_data(self, X, y, feature_idx, threshold):
-        """Разделяет данные по порогу"""
-        pass
-    
-    def print_tree(self):
-        """Выводит дерево в читаемом виде"""
-        pass
-    
     def get_depth(self):
         """Возвращает глубину дерева"""
         return self._calculate_depth(self.root)
@@ -156,12 +140,10 @@ class DecisionTreeClassifier:
         
         return 1 + max(self._calculate_depth(node.left), self._calculate_depth(node.right))
 
-
     def fit(self, X, y):
         """Обучает дерево на данных"""
         self.root = self._build_tree(X, y, depth=0)
-        
-    
+         
     def _predict_single(self, x, node):
         """Предсказывает классы для новых данных"""
         if node.value is not None:
@@ -176,8 +158,6 @@ class DecisionTreeClassifier:
             return self._predict_single(x, node=self.root)
         return [self._predict_single(el, self.root) for el in x]
 
-        
-
     def print_tree(self, node, level, side="root"):
         if node is None:
             return
@@ -189,12 +169,3 @@ class DecisionTreeClassifier:
             print(f"{indent}{side}: Узел -> признак {node.feature_index} <= {node.threshold}")
             self.print_tree(node.left, level + 1, "left")
             self.print_tree(node.right, level + 1, "right")
-    
-
-X = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
-y = [0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1]
-
-dt = DecisionTreeClassifier(max_depth=3)
-dt.fit(X, y)
-
-print(dt.predict([2, 2, 1, 4, 5, 4, 8, 9, 10, 4, 2, 3]))

@@ -3,14 +3,21 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import classification_report
 from sklearn import tree
 from matplotlib import pyplot as plt
+"""from DecisionTreeClassifier import DecisionTreeClassifier"""
 
-train_data = pd.read_csv("Практики/Практика_1_Классификация, деревья решений/data/train_data.csv")
-test_data = pd.read_csv("Практики/Практика_1_Классификация, деревья решений/data/test_data.csv")
+train_data = pd.read_csv("Практики/Практика_1_Классификация, деревья решений/data/train_data.csv", header=0)
+test_data = pd.read_csv("Практики/Практика_1_Классификация, деревья решений/data/test_data.csv", header=0)
 
 model = DecisionTreeClassifier(max_depth=3)
-model.fit(train_data[["Лекции", "Семинары"]], train_data["Зачет"])
-test_data["Предсказанный_Зачет"] = model.predict(test_data[["Лекции", "Семинары"]])
+model.fit(train_data[["X"]], train_data["y"])
 
-print(classification_report(test_data["Зачет"], test_data["Предсказанный_Зачет"]))
-tree.plot_tree(model, feature_names=["Лекции", "Семинары"], filled=True)
+test_data["Предсказанный_Зачет"] = model.predict(test_data[["X"]])
+
+print(classification_report(test_data["y"], test_data["Предсказанный_Зачет"]))
+tree.plot_tree(model, feature_names=["X"], filled=True)
 plt.show()
+
+"""model = DecisionTreeClassifier(max_depth=5)
+model.fit(train_data["X"].tolist(), train_data["y"].tolist())
+
+model.print_tree(model.root, 0)"""
