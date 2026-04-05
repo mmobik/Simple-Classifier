@@ -1,3 +1,5 @@
+import math
+
 class Node:
     """Базовый класс представляет узел дерева"""
     def __init__(self, feature_index=None, threshold=None, left=None, right=None, value=None):
@@ -18,7 +20,7 @@ class Node:
 
 class DecisionTreeClassifier:
     """Классификатор решений по классам"""
-    def __init__(self, max_depth=None, min_samples_split=2):
+    def __init__(self, max_depth=None, min_samples_split=2, metric="gini"):
         """
         Parametrs:
         max_depth: Максимальная глубина дерева
@@ -29,6 +31,7 @@ class DecisionTreeClassifier:
         self.min_samples_split = min_samples_split
         self.root = None
         self.depth = 0
+        self.metric = metric
 
     def _build_tree(self, X, y, depth=0):
         """Рекурсивно строит дерево"""
@@ -115,7 +118,22 @@ class DecisionTreeClassifier:
         m1 = len(left_y)
         m2 = len(right_y)
         m = m1 + m2
-        return m1 / m * self._calculate_gini(left_y) + m2 / m * self._calculate_gini(right_y)
+        if self.metric == "gini":
+            return m1 / m * self._calculate_gini(left_y) + m2 / m * self._calculate_gini(right_y)
+        if self.metric == "entropy":
+            return m1 / m * self._calculate_entropy(left_y) + m2 / m * self._calculate_entropy(right_y)
+        else:
+            raise ValueError("Неизвестный критерий для разбиения")
+    
+    def _calculate_entropy(self, labels):
+        if not labels:
+            return 0
+        elif len(set(labels)) == 1:
+            return 0
+        m = len(labels)
+        p = sum(x== 0 for x in labels) / m
+        q = sum(x== 1 for x in labels) / m
+        return -(p * math.log(p, 2) + q * math.log(q, 2))
     
     def _get_most_common_label(self, y):
         """Возвращает наиболее частый класс"""
@@ -125,7 +143,13 @@ class DecisionTreeClassifier:
         count_0 = sum(1 for label in y if label == 0)
         count_1 = len(y) - count_0
 
-        return 0 if count_0 > count_1 else 1
+        if count_0 > count_1:
+            return 0
+        elif count_1 > count_0:
+            return 1
+        # При одинаковой длине приоритет отдаем единице
+        else:
+            return 1
 
     def get_depth(self):
         """Возвращает глубину дерева"""
