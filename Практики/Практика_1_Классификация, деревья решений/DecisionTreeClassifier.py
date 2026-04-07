@@ -193,3 +193,12 @@ class DecisionTreeClassifier:
             print(f"{indent}{side}: Узел -> признак {node.feature_index} <= {node.threshold}")
             self.print_tree(node.left, level + 1, "left")
             self.print_tree(node.right, level + 1, "right")
+    
+    def accuracy(self, X: list[int], targets: list[int]):
+        total_predicted = 0
+        predicted = self.predict(X)
+        for predict, target in zip(predicted, targets):
+            if predict == target:
+                total_predicted += 1
+        return total_predicted / len(X)
+    

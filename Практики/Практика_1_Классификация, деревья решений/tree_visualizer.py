@@ -36,6 +36,11 @@ def draw(node, is_right_child=False):
     if is_right_child and node.left is None and node.right is None:
         x += 100
     
+    # Для правильного отображения последнего узла
+    if node.depth % 2 == 0 and node.threshold and node.left.value is not None and node.right.value is not None:
+            x += 100
+        
+
     y = node.depth * 100
     rectangle = plt.Rectangle((x, y), 50, 50, edgecolor="blue", facecolor="lightblue", fill=True)
     plt.gca().add_patch(rectangle)

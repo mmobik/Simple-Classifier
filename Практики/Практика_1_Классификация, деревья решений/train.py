@@ -18,7 +18,12 @@ test_data["Предсказанный_Зачет"] = model.predict(test_data[["X
 tree.plot_tree(model, feature_names=["X"], filled=True)
 plt.show()"""
 
-model = DecisionTreeClassifier(max_depth=5, metric="gini")
+model = DecisionTreeClassifier(max_depth=6, metric="gini")
 model.fit(train_data["X"].tolist(), train_data["y"].tolist())
+real_data = test_data["y"].tolist()
+x = test_data["X"].tolist()
+y = test_data["y"].tolist()
+
+print(f"Точность: {model.accuracy(x, y)}")
 
 visualize_tree(model)
