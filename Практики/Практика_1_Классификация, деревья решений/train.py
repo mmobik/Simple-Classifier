@@ -18,8 +18,7 @@ test_data["Предсказанный_Зачет"] = model.predict(test_data[["X
 tree.plot_tree(model, feature_names=["X"], filled=True)
 plt.show()"""
 
-model = DecisionTreeClassifier(max_depth=5, metric="entropy")
+model = DecisionTreeClassifier(max_depth=5, metric="gini")
 model.fit(train_data["X"].tolist(), train_data["y"].tolist())
 
-model.print_tree(model.root, 0)
 visualize_tree(model)

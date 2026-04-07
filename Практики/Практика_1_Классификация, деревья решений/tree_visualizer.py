@@ -17,13 +17,11 @@ def _assign_positions(node, depth=0):
     node.depth = depth
     if node.left is None and node.right is None:
         node.position = node.leaf_index
-        print(node.position)
         return node.leaf_index
     
     min_pos = _assign_positions(node.left, depth + 1)
     max_pos = _assign_positions(node.right, depth + 1)
     mid = round((min_pos + max_pos) / 2)
-    print(mid)
     node.position = mid
     return node.position
 
