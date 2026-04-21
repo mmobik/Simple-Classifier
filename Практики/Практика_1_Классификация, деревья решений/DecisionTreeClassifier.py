@@ -63,35 +63,88 @@ class DecisionTreeClassifier:
             right = right_child)
 
     def _find_best_split(self, X, y):
-        """Находит лучшее разделение для текущего узла"""
-        features = set(X)
-        groups = {}
-        best_gini = float("inf")
-        best_groups = []
-        best_threshold = 0
-        # Наилучшее разделение достигается при наименьшей G(I)
-        for threshold in features:
-            group_1 = []
-            group_2 = []
-            for feature, result in zip(X, y):
-                if feature <= threshold:
-                    group_1.append(result)
-                else:
-                    group_2.append(result)
-            groups[threshold] = [group_1, group_2]
+        pairs = sorted(zip(X, y))
+        n = len(pairs)
         
-        for key, value in groups.items():
-            if not value[0] or not value[1]:
+        # Начальные счетчики (все справа)
+        right_0 = sum(1 for _, label in pairs if label == 0)
+        right_1 = n - right_0
+        left_0 = 0
+        left_1 = 0
+        
+        best_gini = float('inf')
+        best_threshold = None
+        best_left_y = []
+        best_right_y = []
+        
+        i = 0
+        while i < n - 1:
+            current_x = pairs[i][0]
+            
+            # Перекидываем все объекты с одинаковым X
+            while i < n and pairs[i][0] == current_x:
+                _, label = pairs[i]
+                if label == 0:
+                    left_0 += 1
+                    right_0 -= 1
+                else:
+                    left_1 += 1
+                    right_1 -= 1
+                i += 1
+            
+            if i >= n or left_0 + left_1 == 0 or right_0 + right_1 == 0:
                 continue
-            split_impurity = self._calculate_split_impurity(value[0], value[1])
-            if split_impurity < best_gini:
-                best_gini = split_impurity
-                best_groups = groups[key]
-                best_threshold = key
-            else:
-                continue
+            
+            next_x = pairs[i][0]
+            threshold = (current_x + next_x) / 2
+            
+            # Считаем gini через счетчики без создания списков
+            gini = self._calculate_split_impurity_from_counts(
+                left_0, left_1, right_0, right_1
+            )
+            
+            if gini < best_gini:
+                best_gini = gini
+                best_threshold = threshold
+                # Запоминаем группы только для лучшего порога (один раз)
+                best_left_y = [label for x_val, label in pairs if x_val <= threshold]
+                best_right_y = [label for x_val, label in pairs if x_val > threshold]
+        
+        if best_threshold is None:
+            return [float('inf'), None, None]
+        
+        return [best_gini, best_threshold, [best_left_y, best_right_y]]
 
-        return [best_gini, best_threshold, best_groups]
+    def _calculate_split_impurity_from_counts(self, left_0, left_1, right_0, right_1):
+        """Вычисляет взвешенную нечистоту разделения по счетчикам"""
+        n_left = left_0 + left_1
+        n_right = right_0 + right_1
+        n_total = n_left + n_right
+        
+        if n_left == 0 or n_right == 0:
+            return float('inf')
+        
+        if self.metric == "gini":
+            gini_left = 1 - (left_0/n_left)**2 - (left_1/n_left)**2
+            gini_right = 1 - (right_0/n_right)**2 - (right_1/n_right)**2
+            return (n_left/n_total) * gini_left + (n_right/n_total) * gini_right
+        
+        elif self.metric == "entropy":
+            ent_left = 0
+            ent_right = 0
+            if left_0 > 0:
+                ent_left -= (left_0/n_left) * math.log(left_0/n_left, 2)
+            if left_1 > 0:
+                ent_left -= (left_1/n_left) * math.log(left_1/n_left, 2)
+            if right_0 > 0:
+                ent_right -= (right_0/n_right) * math.log(right_0/n_right, 2)
+            if right_1 > 0:
+                ent_right -= (right_1/n_right) * math.log(right_1/n_right, 2)
+            return (n_left/n_total) * ent_left + (n_right/n_total) * ent_right
+        
+        else:
+            raise ValueError("Неизвестный критерий для разбиения")
+
             
     def _should_stop(self, y, depth):
         """Проверяет условия остановки"""
